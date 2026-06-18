@@ -52,3 +52,34 @@ class ValidationException(AppException):
 class FilterNotFoundException(AppException):
     def __init__(self, filter_id: int):
         super().__init__(404, f"过滤条件不存在: filter_id={filter_id}")
+
+
+class DelegationNotFoundException(AppException):
+    def __init__(self, delegation_id: int):
+        super().__init__(404, f"委托不存在: delegation_id={delegation_id}")
+
+
+class TemplateNotFoundException(AppException):
+    def __init__(self, template_id: int):
+        super().__init__(404, f"模板不存在: template_id={template_id}")
+
+
+class InvalidDelegationException(AppException):
+    def __init__(self, detail: str):
+        super().__init__(400, f"无效委托: {detail}")
+
+
+class BatchApprovalException(AppException):
+    def __init__(self, detail: str, failed_tasks: list[int] = None):
+        self.failed_tasks = failed_tasks or []
+        super().__init__(400, f"批量审批失败: {detail}")
+
+
+class TaskNotOverdueException(AppException):
+    def __init__(self, task_id: int):
+        super().__init__(400, f"任务未超时: task_id={task_id}")
+
+
+class AlreadyEscalatedException(AppException):
+    def __init__(self, task_id: int):
+        super().__init__(400, f"任务已升级: task_id={task_id}")

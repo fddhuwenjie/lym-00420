@@ -18,12 +18,32 @@ class TaskAction(str, Enum):
     ARCHIVE = "archive"
     VOTE_APPROVE = "vote_approve"
     VOTE_REJECT = "vote_reject"
+    REMIND = "remind"
+    ESCALATE = "escalate"
+
+
+class DelegationStatus(str, Enum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class ReminderType(str, Enum):
+    NORMAL = "normal"
+    ESCALATION = "escalation"
 
 
 class Priority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+
+
+PRIORITY_DEADLINE_HOURS = {
+    Priority.LOW: 72,
+    Priority.MEDIUM: 24,
+    Priority.HIGH: 8,
+}
 
 
 class ApprovalMode(str, Enum):

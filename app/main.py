@@ -8,30 +8,58 @@ from .database import init_db
 from .exceptions import AppException
 from .schemas import (
     ApprovalAction,
+    AuditExportRequest,
+    AuditExportResponse,
+    BatchApprovalRequest,
+    BatchApprovalResult,
+    DelegationCreate,
+    DelegationOut,
+    DelegationRecordOut,
     ErrorResponse,
+    EscalationCreate,
     FilterCreate,
     FilterOut,
     OperatorAction,
+    ReminderCreate,
+    ReminderRecordOut,
     TaskCreate,
+    TaskFromTemplate,
     TaskListItem,
     TaskOut,
     TaskResubmit,
+    TemplateCreate,
+    TemplateOut,
     UserOut,
     ApprovalRecord,
 )
 from .services import (
     approve_task,
     archive_task,
+    batch_approve,
+    create_delegation,
     create_task,
+    create_task_from_template,
+    create_template,
     delete_filter,
+    delete_template,
+    escalate_task,
+    export_audit_data,
+    get_delegation,
+    get_delegation_records,
     get_filter,
+    get_reminder_records,
     get_task,
     get_task_history,
+    get_template,
+    list_delegations,
     list_filters,
     list_tasks,
+    list_templates,
     list_users,
     reject_task,
+    remind_task,
     resubmit_task,
+    revoke_delegation,
     save_filter,
     submit_task,
 )
@@ -173,3 +201,106 @@ def api_get_filter(filter_id: int, user_id: int):
 def api_delete_filter(filter_id: int, user_id: int):
     delete_filter(filter_id, user_id)
     return {"ok": True}
+
+
+@app.post("/delegations", response_model=DelegationOut, tags=["审批委托"])
+def api_create_delegation(payload: DelegationCreate):
+    return create_delegation(
+        delegator_id=payload.delegator_id,
+        delegatee_id=payload.delegatee_id,
+        start_time=payload.start_time,
+        end_time=payload.end_time,
+    )
+
+
+@app.get("/delegations", response_model=list[DelegationOut], tags=["审批委托"])
+def api_list_delegations(delegator_id: Optional[int] = Query(None, description="按委托人过滤")):
+    return list_delegations(delegator_id=delegator_id)
+
+
+@app.get("/delegations/{delegation_id}", response_model=DelegationOut, tags=["审批委托"])
+def api_get_delegation(delegation_id: int):
+    return get_delegation(delegation_id)
+
+
+@app.post("/delegations/{delegation_id}/revoke", response_model=DelegationOut, tags=["审批委托"])
+def api_revoke_delegation(delegation_id: int, payload: OperatorAction):
+    return revoke_delegation(delegation_id, payload.operator_id)
+
+
+@app.get("/delegation-records", response_model=list[DelegationRecordOut], tags=["审批委托"])
+def api_get_delegation_records(task_id: Optional[int] = Query(None, description="按任务过滤")):
+    return get_delegation_records(task_id=task_id)
+
+
+@app.post("/tasks/{task_id}/remind", response_model=TaskOut, tags=["超时催办"])
+def api_remind_task(task_id: int, payload: ReminderCreate):
+    return remind_task(task_id, payload.operator_id, payload.comment)
+
+
+@app.post("/tasks/{task_id}/escalate", response_model=TaskOut, tags=["超时催办"])
+def api_escalate_task(task_id: int, payload: EscalationCreate):
+    return escalate_task(task_id, payload.operator_id, payload.comment)
+
+
+@app.get("/reminder-records", response_model=list[ReminderRecordOut], tags=["超时催办"])
+def api_get_reminder_records(task_id: Optional[int] = Query(None, description="按任务过滤")):
+    return get_reminder_records(task_id=task_id)
+
+
+@app.post("/batch-approve", response_model=BatchApprovalResult, tags=["批量审批"])
+def api_batch_approve(payload: BatchApprovalRequest):
+    return batch_approve(
+        operator_id=payload.operator_id,
+        task_ids=payload.task_ids,
+        action=payload.action,
+        comment=payload.comment,
+    )
+
+
+@app.post("/templates", response_model=TemplateOut, tags=["审批模板"])
+def api_create_template(payload: TemplateCreate):
+    return create_template(
+        creator_id=payload.creator_id,
+        template_name=payload.template_name,
+        department=payload.department,
+        priority=payload.priority,
+        approval_mode=payload.approval_mode,
+        approver_ids=payload.approver_ids,
+    )
+
+
+@app.get("/templates", response_model=list[TemplateOut], tags=["审批模板"])
+def api_list_templates(creator_id: Optional[int] = Query(None, description="按创建人过滤")):
+    return list_templates(creator_id=creator_id)
+
+
+@app.get("/templates/{template_id}", response_model=TemplateOut, tags=["审批模板"])
+def api_get_template(template_id: int):
+    return get_template(template_id)
+
+
+@app.delete("/templates/{template_id}", tags=["审批模板"])
+def api_delete_template(template_id: int, operator_id: int):
+    delete_template(template_id, operator_id)
+    return {"ok": True}
+
+
+@app.post("/tasks/from-template", response_model=TaskOut, tags=["审批模板"])
+def api_create_task_from_template(payload: TaskFromTemplate):
+    return create_task_from_template(
+        creator_id=payload.creator_id,
+        template_id=payload.template_id,
+        title=payload.title,
+        description=payload.description,
+    )
+
+
+@app.post("/audit/export", response_model=AuditExportResponse, tags=["审计导出"])
+def api_export_audit_data(payload: AuditExportRequest):
+    return export_audit_data(
+        department=payload.department,
+        status=payload.status,
+        start_time=payload.start_time,
+        end_time=payload.end_time,
+    )
